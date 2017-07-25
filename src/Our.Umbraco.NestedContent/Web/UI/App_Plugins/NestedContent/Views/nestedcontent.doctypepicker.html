@@ -27,7 +27,7 @@
                     </td>
                     <td>
                         <select id="{{model.alias}}_tab_select"
-                            ng-options="t for t in selectedDocTypeTabs(config)"
+                            ng-options="t for t in selectedDocTypeTabs[config.ncAlias]"
                             ng-model="config.ncTabAlias" required></select>
                     </td>
                     <td>
@@ -52,7 +52,7 @@
         </p>
         <p>
             <b>Name template:</b><br/>
-            Enter an angular expression to evaluate against each item for its name.            
+            Enter an angular expression to evaluate against each item for its name. Use <code ng-non-bindable>{{$index}}</code> to display the item index  
         </p>
     </div>
 </div>

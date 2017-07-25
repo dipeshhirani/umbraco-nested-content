@@ -36,7 +36,7 @@ namespace Our.Umbraco.NestedContent.Extensions
                    int.TryParse(preValueDictionary["maxItems"], out maxItems) && maxItems == 1;
         }
 
-        public static object ConvertPropertyToNestedContent(this PublishedPropertyType propertyType, object source)
+        public static object ConvertPropertyToNestedContent(this PublishedPropertyType propertyType, object source, bool preview)
         {
             using (DisposableTimer.DebugDuration<PublishedPropertyType>(string.Format("ConvertPropertyToNestedContent ({0})", propertyType.DataTypeId)))
             {
@@ -78,7 +78,7 @@ namespace Our.Umbraco.NestedContent.Extensions
                             var propType = publishedContentType.GetPropertyType(jProp.Key);
                             if (propType != null)
                             {
-                                properties.Add(new DetachedPublishedProperty(propType, jProp.Value));
+                                properties.Add(new DetachedPublishedProperty(propType, jProp.Value, preview));
                             }
                         }
 
@@ -90,15 +90,26 @@ namespace Our.Umbraco.NestedContent.Extensions
                         }
 
                         // Get the current request node we are embedded in
-                        var pcr = UmbracoContext.Current.PublishedContentRequest;
+                        var pcr = UmbracoContext.Current == null ? null : UmbracoContext.Current.PublishedContentRequest;
                         var containerNode = pcr != null && pcr.HasPublishedContent ? pcr.PublishedContent : null;
 
-                        processedValue.Add(new DetachedPublishedContent(
+                        // Create the model based on our implementation of IPublishedContent
+                        IPublishedContent content = new DetachedPublishedContent(
                             nameObj == null ? null : nameObj.ToString(),
                             publishedContentType,
                             properties.ToArray(),
                             containerNode,
-                            i));
+                            i,
+                            preview);
+
+                        if (PublishedContentModelFactoryResolver.HasCurrent)
+                        {
+                            // Let the current model factory create a typed model to wrap our model
+                            content = PublishedContentModelFactoryResolver.Current.Factory.CreateModel(content);
+                        }
+
+                        // Add the (typed) model as a result
+                        processedValue.Add(content);
                     }
 
                     if (propertyType.IsSingleNestedContentProperty())
